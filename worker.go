@@ -19,7 +19,7 @@ func working(task *Task) *TaskResult {
 	// 更新执行状态为 执行中
 	_, err := updateRunStatus(task.Id, map[string]interface{}{"t_run_status": "2"})
 	if err != nil {
-		logger.WithFields(logrus.Fields{
+		Logger.WithFields(logrus.Fields{
 			"taskId": task.Id,
 			"err":    err,
 		}).Warningln("update run_status failed")
@@ -40,27 +40,24 @@ func working(task *Task) *TaskResult {
 
 	// 执行结果
 	if err != nil {
-		logger.WithFields(logrus.Fields{
+		Logger.WithFields(logrus.Fields{
 			"command": task.Command,
 			"err":     err,
 		}).Warningf("task[%d] worker failed", task.Id)
 		taskResult.RunCode = 500
 		taskResult.Result = err.Error()
 	} else {
-		// 更新执行状态为 等待执行
-		_, err = updateRunStatus(task.Id, map[string]interface{}{"t_run_status": "1"})
-		if err != nil {
-			logger.WithFields(logrus.Fields{
-				"taskId": task.Id,
-				"err":    err,
-			}).Warningln("update run_status failed")
-		}
-		logger.WithFields(logrus.Fields{
-			"command": task.Command,
-			"err":     err,
-		}).Infoln("worker failed")
 		taskResult.RunCode = 200
 		taskResult.Result = string(opBytes)
 	}
+	// 更新执行状态为 等待执行
+	_, err = updateRunStatus(task.Id, map[string]interface{}{"t_run_status": "1"})
+	if err != nil {
+		Logger.WithFields(logrus.Fields{
+			"taskId": task.Id,
+			"err":    err,
+		}).Warningln("update run_status failed")
+	}
+
 	return &taskResult
 }

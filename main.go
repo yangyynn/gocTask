@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	logger *logrus.Logger
+	Logger *logrus.Logger
 )
 
 // 任务Task结构
@@ -18,34 +18,35 @@ type Task struct {
 	Command   string
 	StartTime int64
 	EndTime   int64
-	Uid       int
+	Uid       string
+	NotifyNum int
 	NextTime  int64
 }
 
 func init() {
-	logger = logrus.New()
-	logger.SetOutput(os.Stdout)
-	logger.SetLevel(logrus.DebugLevel)
-	logger.Infoln("Init system.")
+	Logger = logrus.New()
+	Logger.SetOutput(os.Stdout)
+	Logger.SetLevel(logrus.DebugLevel)
+	Logger.Infoln("Init system.")
 }
 
 func main() {
 	// todo 修改logger日志记录方式为，文件输出
 
-	logger.Infoln("Exec start")
+	Logger.Infoln("Exec start")
 
 	// 初始化数据传输通道
-	logger.Infoln("Create data channels.")
+	Logger.Infoln("Create data channels.")
 	var dispatcherChan = make(chan *Task, 10)
 	var workerChan = make(chan *Task, 10)
 
 	// 启动task解析调度器
-	logger.Infoln("Create dispatcherProcess.")
+	Logger.Infoln("Create dispatcherProcess.")
 	go dispatcherProcess(dispatcherChan, workerChan)
 
 	// 启动task任务执行器
 	workerNum := 10
-	logger.Infoln("Create", workerNum, "workerProcess.")
+	Logger.Infoln("Create", workerNum, "workerProcess.")
 	for i := 0; i < workerNum; i++ {
 		go workerProcess(workerChan)
 	}

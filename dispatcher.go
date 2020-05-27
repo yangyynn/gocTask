@@ -19,20 +19,20 @@ func dispatcherProcess(d chan *Task, w chan *Task) {
 		case task := <-d:
 			//判断是否已有任务
 			if hasTask(task.Id, waitQueue) {
-				logger.Infof("dispatcher task id %d was exits", task.Id)
+				Logger.Infof("dispatcher task id %d was exits", task.Id)
 				break
 			}
 
 			//通道接收到需要调度的任务，记录任务下次运行时间，并存入waitQueue队列
 			nextTime := taskNextDoTimeUnix(task)
 			if nextTime == 0 {
-				logger.Infof("dispatcher task[%d] failed, because next time is 0", task.NextTime)
+				Logger.Infof("dispatcher task[%d] failed, because next time is 0", task.NextTime)
 			} else {
 				task.NextTime = nextTime
 				waitQueue = append(waitQueue, task)
 				_, err := updateRunStatus(task.Id, map[string]interface{}{"t_run_status": "1"})
 				if err != nil {
-					logger.WithFields(logrus.Fields{
+					Logger.WithFields(logrus.Fields{
 						"taskId": task.Id,
 						"err":    err,
 					}).Warningln("update run_status failed")
@@ -62,7 +62,7 @@ func dispatcherProcess(d chan *Task, w chan *Task) {
 
 				nextTime := taskNextDoTimeUnix(task)
 				if nextTime == 0 {
-					logger.Infof("task [%d] is delete because next time is 0", task.NextTime)
+					Logger.Infof("task [%d] is delete because next time is 0", task.NextTime)
 					//删除任务
 					waitQueue = append(waitQueue[:i], waitQueue[i+1:]...)
 				} else {
@@ -88,7 +88,7 @@ func taskNextDoTimeUnix(task *Task) int64 {
 	//解析task crontab
 	parse, err := cronlib.Parse(task.Crontab)
 	if err != nil {
-		logger.WithFields(logrus.Fields{
+		Logger.WithFields(logrus.Fields{
 			"crontab": task.Crontab,
 			"err":     err,
 		}).Warningln("parse failed")
