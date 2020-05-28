@@ -2,51 +2,74 @@ package main
 
 import (
 	"github.com/sirupsen/logrus"
+	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
 	"os"
 	"time"
 )
 
 var (
-	Logger *logrus.Logger
+	Logger      *logrus.Logger
+	NotifyWx    = false
+	NotifyEmail = false
 )
 
 // 任务Task结构
 type Task struct {
-	Id        int
-	Title     string
-	Crontab   string
-	Command   string
-	StartTime int64
-	EndTime   int64
-	Uid       string
-	NotifyNum int
-	NextTime  int64
+	Id          int
+	Title       string
+	Crontab     string
+	Command     string
+	StartTime   int64
+	EndTime     int64
+	NotifyId    string
+	NotifyEmail string
+	NotifyNum   int
+	NextTime    int64
 }
 
 func init() {
 	Logger = logrus.New()
 	Logger.SetOutput(os.Stdout)
 	Logger.SetLevel(logrus.DebugLevel)
-	Logger.Infoln("Init system.")
+	Logger.Infoln("系统初始化")
+}
+
+func fileLog() {
+	path := "/tmp/goc_task.log"
+	//日志轮转相关函数
+	//`WithLinkName` 为最新的日志建立软连接
+	//`WithRotationTime` 设置日志分割的时间，隔多久分割一次
+	//WithMaxAge 和 WithRotationCount二者只能设置一个
+	//`WithMaxAge` 设置文件清理前的最长保存时间
+	//`WithRotationCount` 设置文件清理前最多保存的个数
+
+	// 下面配置日志每隔 1 分钟轮转一个新文件，保留最近 3 分钟的日志文件，多余的自动清理掉。
+	writer, _ := rotatelogs.New(
+		path+".%Y%m%d%H%M",
+		rotatelogs.WithLinkName(path),
+		rotatelogs.WithMaxAge(time.Duration(180)*time.Second),
+		rotatelogs.WithRotationTime(time.Duration(60)*time.Second),
+	)
+	Logger.SetOutput(writer)
 }
 
 func main() {
-	// todo 修改logger日志记录方式为，文件输出
+	fileLog() //生成环境，修改logger日志记录方式为，文件输出
 
-	Logger.Infoln("Exec start")
+	Logger.Infoln("开始运行")
 
 	// 初始化数据传输通道
-	Logger.Infoln("Create data channels.")
+	Logger.Infoln("创建数据channel")
 	var dispatcherChan = make(chan *Task, 10)
 	var workerChan = make(chan *Task, 10)
 
 	// 启动task解析调度器
-	Logger.Infoln("Create dispatcherProcess.")
+	Logger.Infoln("启动任务调度处理器")
 	go dispatcherProcess(dispatcherChan, workerChan)
 
 	// 启动task任务执行器
 	workerNum := 10
-	Logger.Infoln("Create", workerNum, "workerProcess.")
+	Logger.Infoln("启动", workerNum, "个任务处理器")
 	for i := 0; i < workerNum; i++ {
 		go workerProcess(workerChan)
 	}

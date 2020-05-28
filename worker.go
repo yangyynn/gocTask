@@ -22,28 +22,34 @@ func working(task *Task) *TaskResult {
 		Logger.WithFields(logrus.Fields{
 			"taskId": task.Id,
 			"err":    err,
-		}).Warningln("update run_status failed")
+		}).Warningln("更新数据库任务运行状态失败")
 	}
 
 	taskResult := TaskResult{Task: task}
 
 	// 开始时间
-	taskResult.StartTime = time.Now().UnixNano() / 1e6
+	now := time.Now()
+	Logger.WithFields(logrus.Fields{
+		"taskId": task.Id,
+	}).Infoln("任务开始执行")
 
 	// linux下命令行执行命令
 	cmd := exec.Command("sh", "-c", task.Command)
 	var opBytes []byte
 	opBytes, err = cmd.Output()
 
-	// 结束时间
-	taskResult.EndTime = time.Now().UnixNano() / 1e6
+	Logger.WithFields(logrus.Fields{
+		"taskId": task.Id,
+	}).Infoln("任务执行结束")
+	// 执行用时
+	taskResult.UseTime = time.Since(now).Truncate(time.Millisecond).Seconds()
 
 	// 执行结果
 	if err != nil {
 		Logger.WithFields(logrus.Fields{
 			"command": task.Command,
 			"err":     err,
-		}).Warningf("task[%d] worker failed", task.Id)
+		}).Warningf("任务ID:%d 运行失败", task.Id)
 		taskResult.RunCode = 500
 		taskResult.Result = err.Error()
 	} else {
@@ -56,7 +62,7 @@ func working(task *Task) *TaskResult {
 		Logger.WithFields(logrus.Fields{
 			"taskId": task.Id,
 			"err":    err,
-		}).Warningln("update run_status failed")
+		}).Warningln("更新数据库任务运行状态失败")
 	}
 
 	return &taskResult

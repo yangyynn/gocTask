@@ -19,14 +19,16 @@ func dispatcherProcess(d chan *Task, w chan *Task) {
 		case task := <-d:
 			//判断是否已有任务
 			if hasTask(task.Id, waitQueue) {
-				Logger.Infof("dispatcher task id %d was exits", task.Id)
+				Logger.Infof("任务 %s 已经存在于调度器钟", task.Title)
 				break
 			}
 
 			//通道接收到需要调度的任务，记录任务下次运行时间，并存入waitQueue队列
 			nextTime := taskNextDoTimeUnix(task)
 			if nextTime == 0 {
-				Logger.Infof("dispatcher task[%d] failed, because next time is 0", task.NextTime)
+				Logger.WithFields(logrus.Fields{
+					"taskId": task.Id,
+				}).Infof("调度任务失败，任务下次运行时间为%d", task.NextTime)
 			} else {
 				task.NextTime = nextTime
 				waitQueue = append(waitQueue, task)
@@ -35,7 +37,7 @@ func dispatcherProcess(d chan *Task, w chan *Task) {
 					Logger.WithFields(logrus.Fields{
 						"taskId": task.Id,
 						"err":    err,
-					}).Warningln("update run_status failed")
+					}).Warningln("运行状态更新数据库失败")
 				}
 			}
 
@@ -62,7 +64,9 @@ func dispatcherProcess(d chan *Task, w chan *Task) {
 
 				nextTime := taskNextDoTimeUnix(task)
 				if nextTime == 0 {
-					Logger.Infof("task [%d] is delete because next time is 0", task.NextTime)
+					Logger.WithFields(logrus.Fields{
+						"taskId": task.Id,
+					}).Infof("调度任务失败，任务下次运行时间为%d", task.NextTime)
 					//删除任务
 					waitQueue = append(waitQueue[:i], waitQueue[i+1:]...)
 				} else {
@@ -91,7 +95,7 @@ func taskNextDoTimeUnix(task *Task) int64 {
 		Logger.WithFields(logrus.Fields{
 			"crontab": task.Crontab,
 			"err":     err,
-		}).Warningln("parse failed")
+		}).Warningln("解析任务运行计划失败")
 	}
 	nt := parse.Next(time.Now())
 

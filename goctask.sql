@@ -1,27 +1,38 @@
 /*
  Navicat Premium Data Transfer
 
- Source Server         : docker-centos7-master
+ Source Server         : wsl_localhost
  Source Server Type    : MySQL
  Source Server Version : 50730
- Source Host           : 192.168.56.10:3306
+ Source Host           : 127.0.0.1:3306
  Source Schema         : goctask
 
  Target Server Type    : MySQL
  Target Server Version : 50730
  File Encoding         : 65001
 
- Date: 27/05/2020 12:37:43
+ Date: 28/05/2020 16:05:21
 */
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- ----------------------------
--- Table structure for task
+-- Table structure for goc_notify
 -- ----------------------------
-DROP TABLE IF EXISTS `task`;
-CREATE TABLE `task`  (
+DROP TABLE IF EXISTS `goc_notify`;
+CREATE TABLE `goc_notify`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `t_id` int(11) NOT NULL,
+  `created_at` datetime(0) NULL DEFAULT NULL,
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for goc_task
+-- ----------------------------
+DROP TABLE IF EXISTS `goc_task`;
+CREATE TABLE `goc_task`  (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `t_title` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '任务名称',
   `t_crontab` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL DEFAULT '1' COMMENT 'Crontab字符串',
@@ -32,13 +43,42 @@ CREATE TABLE `task`  (
   `t_run_status` tinyint(1) NOT NULL DEFAULT 9 COMMENT '运行状态：1 等待运行， 2 运行中,  9 未运行',
   `created_at` datetime(0) NULL DEFAULT NULL,
   `updated_at` datetime(0) NULL DEFAULT NULL,
-  `c_id` int(11) NULL DEFAULT 0 COMMENT '负责人id，通知报警用',
+  `notify_num` tinyint(10) NULL DEFAULT 2 COMMENT '每天最大报警次数',
+  `notify_id` varchar(11) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT '0' COMMENT '负责人微信企业号id',
+  `notify_email` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '负责人email',
   PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 -- ----------------------------
--- Records of task
+-- Table structure for goc_task_log_1
 -- ----------------------------
-INSERT INTO `task` VALUES (3, '测试', '*/1 * * * * ?', 'php test.php', '2020-05-20 16:48:22', '2020-06-06 16:48:25', 1, 9, '2020-05-22 16:48:31', '2020-05-22 16:48:34', 0);
+DROP TABLE IF EXISTS `goc_task_log_1`;
+CREATE TABLE `goc_task_log_1`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `t_id` int(11) NOT NULL,
+  `l_status` int(5) NOT NULL COMMENT '执行结果code',
+  `l_result` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '执行结果',
+  `l_use_time` float NOT NULL COMMENT '程序消耗时间,单位秒',
+  `created_at` int(10) NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `t_id`(`t_id`) USING BTREE,
+  INDEX `created_at`(`created_at`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Table structure for goc_task_log_2
+-- ----------------------------
+DROP TABLE IF EXISTS `goc_task_log_2`;
+CREATE TABLE `goc_task_log_2`  (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `t_id` int(11) NOT NULL,
+  `l_status` int(5) NOT NULL COMMENT '执行结果code',
+  `l_result` varchar(255) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '执行结果',
+  `l_use_time` float NOT NULL COMMENT '程序消耗时间,单位秒',
+  `created_at` int(10) NOT NULL,
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `t_id`(`t_id`) USING BTREE,
+  INDEX `created_at`(`created_at`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
 
 SET FOREIGN_KEY_CHECKS = 1;

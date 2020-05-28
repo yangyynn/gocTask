@@ -4,15 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/sirupsen/logrus"
-	qyWeixin "goctask/notify"
+	"goctask/notify"
 	"strconv"
 )
 
 // 任务执行结果，保存结果，通知结果
 type TaskResult struct {
 	RunCode   int
-	StartTime int64
-	EndTime   int64
+	UseTime   float64
 	Result    string //json格式的返回{"code":"200","message":""}成功 {"code":"99","message":""}错误
 	Task      *Task
 }
@@ -32,7 +31,7 @@ func resultProcess(result *TaskResult) {
 			Logger.WithFields(logrus.Fields{
 				"result": result.Result,
 				"err":    err,
-			}).Warningln("task worker result json decode failed")
+			}).Warningln("任务返回的结果json解析失败")
 			result.RunCode = 500
 			result.Result = fmt.Sprintf("result:%s, err:%s", result.Result, err.Error())
 		} else {
@@ -44,43 +43,76 @@ func resultProcess(result *TaskResult) {
 		}
 	}
 	// 保存执行记录到log表
-	saveLog(result)
+	err := saveTaskLog(result)
+	if err != nil {
+		Logger.WithFields(logrus.Fields{
+			"taskId": result.Task.Id,
+			"err":    err,
+		}).Warningln("任务运行记录log保存失败")
+	}
 
 	// 判断是否需要通知
 	if result.RunCode != 200 {
-		notify(result)
+		sendNotify(result)
 	}
 }
 
-// notify 任务执行出错通知 微信企业号
-func notify(r *TaskResult) {
+// sendNotify 任务执行出错通知 微信企业号/Email
+func sendNotify(r *TaskResult) {
 
 	// 获取今天已经报警次数
 	num, _ := getNotifyNum(r.Task.Id)
-	fmt.Printf("num %d maxnum %d\n", num, r.Task.NotifyNum)
 
 	if num < r.Task.NotifyNum {
-		// 微信企业号通知
-		err := qyWeixin.SendMessage(r.Task.Uid, r.Result)
-		if err != nil {
-			Logger.WithFields(logrus.Fields{
-				"err": err,
-			}).Warningf("qyweixin notify failed")
-		} else {
-			Logger.WithFields(logrus.Fields{
-				"message": r.Result,
-			}).Infof("qyweixin notify")
+
+		var err error
+
+		if NotifyWx {
+			// 微信企业号通知
+			nf := notify.NewNotify("qyweixin")
+			err := nf.SendMessage(r.Task.NotifyId, r.Result)
+			if err != nil {
+				Logger.WithFields(logrus.Fields{
+					"err": err,
+					"taskId": r.Task.Id,
+				}).Warningf("企业微信消息发送失败")
+			} else {
+				Logger.WithFields(logrus.Fields{
+					"message": r.Result,
+					"taskId": r.Task.Id,
+				}).Infof("企业微信消息发送成功")
+			}
 		}
 
-		//todo 邮件通知
+		if NotifyEmail {
+			nf := notify.NewNotify("email")
+			err := nf.SendMessage(r.Task.NotifyEmail, r.Result)
+			if err != nil {
+				Logger.WithFields(logrus.Fields{
+					"err": err,
+					"taskId": r.Task.Id,
+				}).Warningf("Email消息发送失败")
+			} else {
+				Logger.WithFields(logrus.Fields{
+					"message": r.Result,
+					"taskId": r.Task.Id,
+				}).Infof("Email消息发送成功")
+			}
+		}
 
 		// 记录报警
-		err = saveNotify(r.Task.Id, r.Task.Uid)
+		err = saveNotify(r.Task.Id)
 		if err != nil {
 			Logger.WithFields(logrus.Fields{
 				"err":err,
-			}).Infof("save task notify failed")
+				"taskId":r.Task.Id,
+			}).Warningf("保存任务失败通知信息到数据库失败")
 		}
+
+		Logger.WithFields(logrus.Fields{
+			"message": r.Task.Title,
+			"taskId":r.Task.Id,
+		}).Infof("任务失败通知保存成功")
 
 	}
 

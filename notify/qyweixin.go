@@ -1,4 +1,4 @@
-package qyWeixin
+package notify
 
 import (
 	"bytes"
@@ -19,7 +19,7 @@ const (
 	AGENTID = 1000063
 )
 
-var curToken = Token{}
+var curToken = WxToken{}
 
 type QyWeiXin struct {
 	touser  string
@@ -29,14 +29,14 @@ type QyWeiXin struct {
 	safe    string
 }
 
-type Token struct {
+type WxToken struct {
 	AccessToken string `json:"access_token"`
 	ExpiresIn   int    `json:"expires_in"`
 	expiresTime int64
 }
 
-func SendMessage(userId string, content string) error {
-	token, err := getToken()
+func (q *QyWeiXin) SendMessage(userId string, content string) error {
+	token, err := q.getToken()
 	if err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func SendMessage(userId string, content string) error {
 	return nil
 }
 
-func getToken() (string, error) {
+func (*QyWeiXin) getToken() (string, error) {
 
 	if curToken.expiresTime > time.Now().Unix() {
 		return curToken.AccessToken, nil
@@ -83,7 +83,7 @@ func getToken() (string, error) {
 	var tokenBytes []byte
 	tokenBytes, err = ioutil.ReadAll(resp.Body)
 
-	token := Token{}
+	token := WxToken{}
 	err = json.Unmarshal(tokenBytes, &token)
 	if err != nil {
 		return "", nil
