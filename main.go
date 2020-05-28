@@ -1,9 +1,12 @@
 package main
 
 import (
-	"github.com/sirupsen/logrus"
 	rotatelogs "github.com/lestrrat-go/file-rotatelogs"
+	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	"os"
+	"strconv"
+	"syscall"
 	"time"
 )
 
@@ -54,6 +57,13 @@ func fileLog() {
 }
 
 func main() {
+	// 记录程序运行pid
+	if pid := syscall.Getpid(); pid != 1 {
+		ioutil.WriteFile("./goc_task.pid", []byte(strconv.Itoa(pid)), 0777)
+
+	}
+	defer os.Remove("./goc_task.pid")
+
 	fileLog() //生成环境，修改logger日志记录方式为，文件输出
 
 	Logger.Infoln("开始运行")
