@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"github.com/coreos/etcd/mvcc/mvccpb"
 	"go.etcd.io/etcd/clientv3"
 	"gocTask/config"
 	"gocTask/models"
+	"strings"
 	"time"
 )
 
@@ -13,6 +15,7 @@ type EtcdServer struct {
 	client *clientv3.Client
 	kv     clientv3.KV
 	lease  clientv3.Lease
+	watch  clientv3.Watcher
 }
 
 var GEtcd *EtcdServer
@@ -30,6 +33,7 @@ func InitEtcd() (err error) {
 		client: cli,
 		kv:     clientv3.NewKV(cli),
 		lease:  clientv3.NewLease(cli),
+		watch:  clientv3.NewWatcher(cli),
 	}
 
 	return
@@ -42,7 +46,7 @@ func (e *EtcdServer) AddTask(t *models.Task) (oldTask *models.Task, err error) {
 		putResp *clientv3.PutResponse
 	)
 
-	key = config.TASKPREFIX + t.Title
+	key = config.TASK_PREFIX + t.Title
 
 	if value, err = json.Marshal(t); err != nil {
 		return
@@ -70,7 +74,7 @@ func (e *EtcdServer) DeleteTask(title string) (oldTask *models.Task, err error) 
 		key     string
 		delResp *clientv3.DeleteResponse
 	)
-	key = config.TASKPREFIX + title
+	key = config.TASK_PREFIX + title
 
 	GLog.Infof("etcd delete task, task key is %s", key)
 
@@ -90,9 +94,7 @@ func (e *EtcdServer) DeleteTask(title string) (oldTask *models.Task, err error) 
 }
 
 func (e *EtcdServer) ListTask() ([]*models.Task, error) {
-	key := config.TASKPREFIX
-
-	getResp, err := GEtcd.kv.Get(context.TODO(), key, clientv3.WithPrefix())
+	getResp, err := GEtcd.kv.Get(context.TODO(), config.TASK_PREFIX, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
 	}
@@ -109,4 +111,36 @@ func (e *EtcdServer) ListTask() ([]*models.Task, error) {
 	}
 
 	return tasks, nil
+}
+
+// watchTasks 监听etcd中的所有任务
+func (e *EtcdServer) WatchTasks() error {
+	getResponse, err := e.kv.Get(context.TODO(), config.TASK_PREFIX, clientv3.WithPrefix())
+	if err != nil {
+		return err
+	}
+	GLog.Infoln("watching task")
+	go func() {
+		startRevision := getResponse.Header.Revision + 1
+		watchChan := e.watch.Watch(context.TODO(), config.TASK_PREFIX, clientv3.WithPrefix(), clientv3.WithRev(startRevision))
+		for wResp := range watchChan {
+			for _, event := range wResp.Events {
+				taskEvent := &models.TaskEvent{}
+				switch event.Type {
+				case mvccpb.PUT:
+					taskEvent.Event = config.TASK_PUT_EVENT
+					err = json.Unmarshal(event.Kv.Value, &taskEvent.Task)
+					if err != nil {
+						continue
+					}
+				case mvccpb.DELETE:
+					taskTitle := strings.TrimLeft(string(event.Kv.Key), config.TASK_PREFIX)
+					taskEvent.Task = &models.Task{Title: taskTitle}
+				}
+				GDis.TaskEventChan <- taskEvent
+			}
+		}
+	}()
+
+	return nil
 }

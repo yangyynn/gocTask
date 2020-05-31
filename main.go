@@ -56,9 +56,12 @@ func init() {
 	// 配置log记录
 	initLog()
 
+}
+
+func main() {
 	// 开启apiServer服务
 	GLog.Infoln("init api server")
-	err = InitServer()
+	err := InitServer()
 	if err != nil {
 		GLog.Panicln(err)
 	}
@@ -70,20 +73,13 @@ func init() {
 		GLog.Panicln(err)
 	}
 
-}
-
-func main() {
-	//create a dispatcher
+	//init 调度器
 	GLog.Infoln("init dispatcher")
-	dis := NewDispatcher()
-	dis.Run()
+	InitDispatcher()
 
-	//create worker waiting for work
-	GLog.Infoln("init worker")
-	for i := 0; i < config.GConfig.WorkerNum; i++ {
-		w := CreateConcurrentWorker(dis)
-		w.Run()
-	}
+	//init Worker
+	GLog.Infoln("init dispatcher")
+	InitWorker()
 
 	for {
 		time.Sleep(1 * time.Second)
