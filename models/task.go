@@ -34,8 +34,9 @@ type TaskExecute struct {
 }
 
 type TaskResult struct {
-	Task    *Task
-	Output  []byte
-	Err     error
-	UseTime time.Duration
+	Task      *Task
+	Output    []byte
+	Err       error
+	StartTime time.Time
+	EndTime   time.Time
 }

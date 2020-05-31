@@ -146,16 +146,14 @@ func (d *Dispatcher) doWork(plan *models.TaskPlan) {
 		Realtime: time.Now(),
 	}
 
-	GLog.Infof("执行任务: %s, PlanTime: %s, RealTime %s ", plan.Task.Title, plan.NextTime, time.Now())
+	GLog.Infof("执行任务: %s ", plan.Task.Title)
 	GWorker.Run(d.TaskExecuteMap[plan.Task.Title])
 }
 
 // doResult 处理work结果
 func (d *Dispatcher) doResult(result *models.TaskResult) {
 	delete(d.TaskExecuteMap, result.Task.Title)
-	GLog.Infof("执行任务结果: %s, err: %s, UseTime %s", result.Output, result.Err.Error(), result.UseTime)
-
-	//todo notify(result)
+	GLog.Infof("执行任务结果: %s", string(result.Output))
 }
 
 // receiveResult 接受work结果

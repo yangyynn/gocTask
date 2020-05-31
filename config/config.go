@@ -6,7 +6,8 @@ import (
 )
 
 const (
-	TASK_PREFIX = "/cron/t/"
+	TASK_PREFIX   = "/cron/t/"
+	TASK_LOCK_DIR = "/cron/l/"
 
 	TASK_PUT_EVENT = 1
 	TASK_DEL_EVENT = 2

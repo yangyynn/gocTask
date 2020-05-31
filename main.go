@@ -59,14 +59,14 @@ func init() {
 }
 
 func main() {
-	// 开启apiServer服务
+	// Api 服务
 	GLog.Infoln("init api server")
 	err := InitServer()
 	if err != nil {
 		GLog.Panicln(err)
 	}
 
-	// 连接Etcd
+	// Etcd 服务
 	GLog.Infoln("init Etcd server")
 	err = InitEtcd()
 	if err != nil {
@@ -77,7 +77,7 @@ func main() {
 	GLog.Infoln("init dispatcher")
 	InitDispatcher()
 
-	//init Worker
+	//init 执行器
 	GLog.Infoln("init dispatcher")
 	InitWorker()
 
