@@ -73,13 +73,17 @@ func main() {
 		GLog.Panicln(err)
 	}
 
-	//init 调度器
+	// 任务调度器
 	GLog.Infoln("init dispatcher")
 	InitDispatcher()
 
-	//init 执行器
+	// 任务执行器
 	GLog.Infoln("init dispatcher")
 	InitWorker()
+
+	// 任务执行结果处理
+	GLog.Infoln("init dispatcher")
+	InitNotify()
 
 	for {
 		time.Sleep(1 * time.Second)

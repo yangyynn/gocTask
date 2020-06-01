@@ -21,6 +21,7 @@ func InitServer() error {
 	mux.HandleFunc("/task/add", TaskAdd)
 	mux.HandleFunc("/task/delete", TaskDelete)
 	mux.HandleFunc("/task/list", TaskList)
+	mux.HandleFunc("/task/kill", TaskKill)
 
 	listen, err := net.Listen("tcp", config.GConfig.ApiServerAddr)
 	if err != nil {
@@ -128,18 +129,29 @@ ERR:
 }
 
 // TaskKill 强杀执行中的任务
-func TaskKill(w http.ResponseWriter, r * http.Request) {
+func TaskKill(w http.ResponseWriter, r *http.Request) {
 	var (
 		err     error
 		title   string
+		encodeW []byte
 	)
 	if err = r.ParseForm(); err != nil {
 		goto ERR
 	}
 	title = r.PostForm.Get("title")
+	err = GEtcd.KillTask(title)
+	if err != nil {
+		goto ERR
+	}
 
-
-
-	ERR:
-
+	encodeW, _ = models.EncodeResponse(0, "success", title)
+	if err == nil {
+		w.Write(encodeW)
+	}
+	return
+ERR:
+	encodeW, _ = models.EncodeResponse(0, err.Error(), nil)
+	if err == nil {
+		w.Write(encodeW)
+	}
 }

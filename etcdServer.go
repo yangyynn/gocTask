@@ -119,6 +119,20 @@ func (e *EtcdServer) ListTask() ([]*models.Task, error) {
 	return tasks, nil
 }
 
+// KillTask 关闭执行中的任务
+func (e *EtcdServer) KillTask(title string) error {
+	key := config.TASK_KILL_DIR + title
+
+	GLog.Infof("etcd add kill task, title is ", title)
+
+	_, err := e.kv.Put(context.TODO(), key, title)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // watchTasks 监听etcd中的所有任务
 func (e *EtcdServer) WatchTasks() error {
 	getResponse, err := e.kv.Get(context.TODO(), config.TASK_TASK_DIR, clientv3.WithPrefix())
