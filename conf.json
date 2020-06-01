@@ -1,0 +1,10 @@
+{
+  "ApiServer配置":"",
+  "api_port": 8090,
+
+  "ApiServer读取超时": "单位毫秒",
+  "api_read_timout": 5000,
+
+  "ApiServer写入超时": "单位毫秒",
+  "api_write_timeout": 5000
+}
