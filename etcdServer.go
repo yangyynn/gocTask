@@ -50,7 +50,7 @@ func (e *EtcdServer) AddTask(t *models.Task) (oldTask *models.Task, err error) {
 		putResp *clientv3.PutResponse
 	)
 
-	key = config.TASK_PREFIX + t.Title
+	key = config.TASK_TASK_DIR + t.Title
 
 	if value, err = json.Marshal(t); err != nil {
 		return
@@ -79,7 +79,7 @@ func (e *EtcdServer) DeleteTask(title string) (oldTask *models.Task, err error) 
 		key     string
 		delResp *clientv3.DeleteResponse
 	)
-	key = config.TASK_PREFIX + title
+	key = config.TASK_TASK_DIR + title
 
 	GLog.Infof("etcd delete task, task key is %s", key)
 
@@ -100,7 +100,7 @@ func (e *EtcdServer) DeleteTask(title string) (oldTask *models.Task, err error) 
 
 // ListTask
 func (e *EtcdServer) ListTask() ([]*models.Task, error) {
-	getResp, err := GEtcd.kv.Get(context.TODO(), config.TASK_PREFIX, clientv3.WithPrefix())
+	getResp, err := GEtcd.kv.Get(context.TODO(), config.TASK_TASK_DIR, clientv3.WithPrefix())
 	if err != nil {
 		return nil, err
 	}
@@ -121,14 +121,14 @@ func (e *EtcdServer) ListTask() ([]*models.Task, error) {
 
 // watchTasks 监听etcd中的所有任务
 func (e *EtcdServer) WatchTasks() error {
-	getResponse, err := e.kv.Get(context.TODO(), config.TASK_PREFIX, clientv3.WithPrefix())
+	getResponse, err := e.kv.Get(context.TODO(), config.TASK_TASK_DIR, clientv3.WithPrefix())
 	if err != nil {
 		return err
 	}
 	GLog.Infoln("watching task")
 	go func() {
 		startRevision := getResponse.Header.Revision + 1
-		watchChan := e.watch.Watch(context.TODO(), config.TASK_PREFIX, clientv3.WithPrefix(), clientv3.WithRev(startRevision))
+		watchChan := e.watch.Watch(context.TODO(), config.TASK_TASK_DIR, clientv3.WithPrefix(), clientv3.WithRev(startRevision))
 		for wResp := range watchChan {
 			for _, event := range wResp.Events {
 				taskEvent := &models.TaskEvent{}
@@ -140,10 +140,31 @@ func (e *EtcdServer) WatchTasks() error {
 						continue
 					}
 				case mvccpb.DELETE:
-					taskTitle := strings.TrimLeft(string(event.Kv.Key), config.TASK_PREFIX)
+					taskTitle := strings.TrimLeft(string(event.Kv.Key), config.TASK_TASK_DIR)
 					taskEvent.Task = &models.Task{Title: taskTitle}
 				}
 				GDis.TaskEventChan <- taskEvent
+			}
+		}
+	}()
+
+	return nil
+}
+
+func (e *EtcdServer) WatchKillTask() error {
+	go func() {
+		watchChan := e.watch.Watch(context.TODO(), config.TASK_KILL_DIR, clientv3.WithPrefix())
+		for wResp := range watchChan {
+			for _, event := range wResp.Events {
+				taskEvent := &models.TaskEvent{}
+				switch event.Type {
+				case mvccpb.PUT:
+					taskName := strings.TrimPrefix(string(event.Kv.Value), config.TASK_KILL_DIR)
+					taskEvent.Event = config.TASK_KILL_EVENT
+					taskEvent.Task.Title = taskName
+					GDis.TaskEventChan <- taskEvent
+				case mvccpb.DELETE:
+				}
 			}
 		}
 	}()

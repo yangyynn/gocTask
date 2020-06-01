@@ -1,8 +1,8 @@
 package main
 
 import (
-	"context"
 	"gocTask/models"
+	"math/rand"
 	"os/exec"
 	"time"
 )
@@ -25,6 +25,9 @@ func (w *Worker) Run(taskExecute *models.TaskExecute) {
 		result.StartTime = time.Now()
 		// 抢锁
 		etcdMutex := &EtcdMutex{ttl: 10}
+
+		time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
+
 		err := etcdMutex.TryLock(taskExecute.Task.Title)
 		defer etcdMutex.UnLock()
 		if err != nil {
@@ -35,7 +38,7 @@ func (w *Worker) Run(taskExecute *models.TaskExecute) {
 
 			result.StartTime = time.Now()
 			// 执行Task
-			cmd := exec.CommandContext(context.TODO(), "/bin/bash", "-c", taskExecute.Task.Command)
+			cmd := exec.CommandContext(taskExecute.CancelCtx, "/bin/bash", "-c", taskExecute.Task.Command)
 
 			output, err := cmd.CombinedOutput()
 

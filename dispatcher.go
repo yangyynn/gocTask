@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"github.com/gorhill/cronexpr"
 	"gocTask/config"
 	"gocTask/models"
@@ -31,6 +32,7 @@ func InitDispatcher() {
 	}
 	GDis.getTasks()
 	GDis.watchTasks()
+	GDis.watchKillTasks()
 	GDis.run()
 }
 
@@ -53,6 +55,11 @@ func (d *Dispatcher) getTasks() {
 // watchTasks 监听Etcd中的任务
 func (d *Dispatcher) watchTasks() {
 	GEtcd.WatchTasks()
+}
+
+// watchTasks 监听Etcd中的任务
+func (d *Dispatcher) watchKillTasks() {
+	GEtcd.WatchKillTask()
 }
 
 // run 开始运行dispatcher等待taskChan的输入进行处理
@@ -93,6 +100,11 @@ func (d *Dispatcher) doEvent(event *models.TaskEvent) {
 	case config.TASK_DEL_EVENT:
 		// 删除task
 		delete(d.TaskPlanMap, event.Task.Title)
+	case config.TASK_KILL_EVENT:
+		if taskExecute, isExecute := d.TaskExecuteMap[event.Task.Title]; isExecute {
+			// 如果正在执行，则通知worker取消
+			taskExecute.CancelFunc()
+		}
 	}
 }
 
@@ -145,6 +157,7 @@ func (d *Dispatcher) doWork(plan *models.TaskPlan) {
 		PlanTime: plan.NextTime,
 		Realtime: time.Now(),
 	}
+	d.TaskExecuteMap[plan.Task.Title].CancelCtx,d.TaskExecuteMap[plan.Task.Title].CancelFunc = context.WithCancel(context.TODO())
 
 	GLog.Infof("执行任务: %s ", plan.Task.Title)
 	GWorker.Run(d.TaskExecuteMap[plan.Task.Title])
@@ -154,6 +167,7 @@ func (d *Dispatcher) doWork(plan *models.TaskPlan) {
 func (d *Dispatcher) doResult(result *models.TaskResult) {
 	delete(d.TaskExecuteMap, result.Task.Title)
 	GLog.Infof("执行任务结果: %s", string(result.Output))
+	//todo 通知notify处理结果
 }
 
 // receiveResult 接受work结果

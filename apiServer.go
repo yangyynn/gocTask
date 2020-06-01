@@ -126,3 +126,20 @@ ERR:
 		w.Write(encodeW)
 	}
 }
+
+// TaskKill 强杀执行中的任务
+func TaskKill(w http.ResponseWriter, r * http.Request) {
+	var (
+		err     error
+		title   string
+	)
+	if err = r.ParseForm(); err != nil {
+		goto ERR
+	}
+	title = r.PostForm.Get("title")
+
+
+
+	ERR:
+
+}

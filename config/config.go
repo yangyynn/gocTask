@@ -6,11 +6,13 @@ import (
 )
 
 const (
-	TASK_PREFIX   = "/cron/t/"
+	TASK_TASK_DIR = "/cron/t/"
 	TASK_LOCK_DIR = "/cron/l/"
+	TASK_KILL_DIR = "/cron/k/"
 
 	TASK_PUT_EVENT = 1
 	TASK_DEL_EVENT = 2
+	TASK_KILL_EVENT = 3
 )
 
 type Config struct {

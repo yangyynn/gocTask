@@ -1,6 +1,7 @@
 package models
 
 import (
+	"context"
 	"github.com/gorhill/cronexpr"
 	"time"
 )
@@ -21,18 +22,23 @@ type TaskEvent struct {
 	Task  *Task
 }
 
+// TaskPlan 任务执行计划
 type TaskPlan struct {
 	Task     *Task
 	Expr     *cronexpr.Expression
 	NextTime time.Time
 }
 
+// TaskExecute 任务执行
 type TaskExecute struct {
 	Task     *Task
 	PlanTime time.Time
 	Realtime time.Time
+	CancelCtx context.Context
+	CancelFunc context.CancelFunc
 }
 
+// TaskResult 任务执行结果
 type TaskResult struct {
 	Task      *Task
 	Output    []byte
