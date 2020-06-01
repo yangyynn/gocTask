@@ -1,0 +1,20 @@
+{
+  "任务处理器协程数量": "",
+  "worker_num" : 10,
+
+  "Log日志地址": "",
+  "log_file": "./runtime/goctask.log",
+
+  "api服务器端口": "",
+  "api_server_addr": "127.0.0.1:8089",
+  "api读取超时": "毫秒",
+  "api_server_read_timeout": 5000,
+  "api写入超时": "毫秒",
+  "api_server_write_timeout": 5000,
+
+  "Etcd": "相关配置",
+  "集群基地": "毫秒",
+  "etcd_server": ["127.0.0.1:2379"],
+  "拨号超时": "毫秒",
+  "etcd_dial_timeout": 5000
+}
