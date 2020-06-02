@@ -157,7 +157,7 @@ func (d *Dispatcher) doWork(plan *models.TaskPlan) {
 		PlanTime: plan.NextTime,
 		Realtime: time.Now(),
 	}
-	d.TaskExecuteMap[plan.Task.Title].CancelCtx,d.TaskExecuteMap[plan.Task.Title].CancelFunc = context.WithCancel(context.TODO())
+	d.TaskExecuteMap[plan.Task.Title].CancelCtx, d.TaskExecuteMap[plan.Task.Title].CancelFunc = context.WithCancel(context.TODO())
 
 	GLog.Infof("执行任务: %s ", plan.Task.Title)
 	GWorker.Run(d.TaskExecuteMap[plan.Task.Title])
@@ -167,7 +167,8 @@ func (d *Dispatcher) doWork(plan *models.TaskPlan) {
 func (d *Dispatcher) doResult(result *models.TaskResult) {
 	delete(d.TaskExecuteMap, result.Task.Title)
 	GLog.Infof("执行任务结果: %s", string(result.Output))
-	//todo 通知notify处理结果
+	// 通知notify处理结果
+	GNotify.Run(result)
 }
 
 // receiveResult 接受work结果

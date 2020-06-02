@@ -16,5 +16,16 @@
   "集群基地": "毫秒",
   "etcd_server": ["127.0.0.1:2379"],
   "拨号超时": "毫秒",
-  "etcd_dial_timeout": 5000
+  "etcd_dial_timeout": 5000,
+
+  "报警通知设置": "type为可选通知方式，可以一起使用",
+  "alarm_max_num": 10,
+  "alarm_type": ["email", "qyweixin"],
+  "qyweixin_corp_id": "wxab0457202f91c2fc",
+  "qyweixin_corp_secret": "v9DbPwXIpmu5RYcMa3xqzxR51VyEzIHJYhpUVrpNxPk",
+  "qyweixin_agentid": 1000063,
+  "email_user": "zhanghao@xxxx.com",
+  "email_pass": "xxxx",
+  "email_host": "smtp.mxhichina.com",
+  "email_port": "465"
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gocTask/config"
 	"gocTask/models"
 	"math/rand"
 	"os/exec"
@@ -9,7 +10,9 @@ import (
 
 type Worker struct{}
 
-var GWorker *Worker
+var (
+	GWorker *Worker
+)
 
 func InitWorker() {
 	GWorker = &Worker{}
@@ -18,6 +21,7 @@ func InitWorker() {
 func (w *Worker) Run(taskExecute *models.TaskExecute) {
 	go func() {
 		result := models.TaskResult{
+			Code:   200,
 			Task:   taskExecute.Task,
 			Output: make([]byte, 0),
 		}
@@ -28,9 +32,10 @@ func (w *Worker) Run(taskExecute *models.TaskExecute) {
 
 		time.Sleep(time.Duration(rand.Intn(500)) * time.Millisecond)
 
-		err := etcdMutex.TryLock(taskExecute.Task.Title)
+		err := etcdMutex.TryLock(config.TASK_LOCK_DIR + taskExecute.Task.Title)
 		defer etcdMutex.UnLock()
 		if err != nil {
+			result.Code = 501
 			// 没抢到锁，不执行任务
 			result.Err = err
 			result.EndTime = time.Now()
@@ -41,7 +46,9 @@ func (w *Worker) Run(taskExecute *models.TaskExecute) {
 			cmd := exec.CommandContext(taskExecute.CancelCtx, "/bin/bash", "-c", taskExecute.Task.Command)
 
 			output, err := cmd.CombinedOutput()
-
+			if err != nil {
+				result.Code = 500
+			}
 			result.Output = output
 			result.Err = err
 			result.EndTime = time.Now()

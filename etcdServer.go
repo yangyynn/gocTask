@@ -8,6 +8,7 @@ import (
 	"go.etcd.io/etcd/clientv3"
 	"gocTask/config"
 	"gocTask/models"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -119,6 +120,25 @@ func (e *EtcdServer) ListTask() ([]*models.Task, error) {
 	return tasks, nil
 }
 
+// TaskAlarmNum 获取任务警告次数
+func (e *EtcdServer) GetAlarmNum(key string) (num int, err error) {
+	var numResp *clientv3.GetResponse
+	if numResp, err = GEtcd.kv.Get(context.TODO(), key); err != nil {
+		return
+	}
+	if len(numResp.Kvs) > 0 {
+		return strconv.Atoi(string(numResp.Kvs[0].Value))
+	} else {
+		return 0, nil
+	}
+}
+
+// TaskAlarmNum 保存警告次数
+func (e *EtcdServer) SetAlarmNum(key string, num int) (err error) {
+	_, err = GEtcd.kv.Put(context.TODO(), key, strconv.Itoa(num))
+	return
+}
+
 // KillTask 关闭执行中的任务
 func (e *EtcdServer) KillTask(title string) error {
 	key := config.TASK_KILL_DIR + title
@@ -197,7 +217,7 @@ type EtcdMutex struct {
 }
 
 // initMutex 初始化分布式锁
-func (em *EtcdMutex) TryLock(taskTitle string) (err error) {
+func (em *EtcdMutex) TryLock(key string) (err error) {
 	var (
 		leaseResp     *clientv3.LeaseGrantResponse
 		leaseRespChan <-chan *clientv3.LeaseKeepAliveResponse
@@ -234,7 +254,7 @@ func (em *EtcdMutex) TryLock(taskTitle string) (err error) {
 	// 创建事务txn
 	txn = GEtcd.kv.Txn(context.TODO())
 	// 锁路径
-	em.key = config.TASK_LOCK_DIR + taskTitle
+	em.key = key
 	// 事务枪锁
 	txn.If(clientv3.Compare(clientv3.CreateRevision(em.key), "=", 0)).
 		Then(clientv3.OpPut(em.key, "", clientv3.WithLease(em.leaseId))).
@@ -249,7 +269,7 @@ func (em *EtcdMutex) TryLock(taskTitle string) (err error) {
 	// 如果抢锁失败
 	if !txnRes.Succeeded {
 		// 锁被占用
-		err = errors.New("释放上下文,释放锁")
+		err = errors.New("锁被占用")
 		goto FAIL
 	}
 

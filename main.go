@@ -78,11 +78,11 @@ func main() {
 	InitDispatcher()
 
 	// 任务执行器
-	GLog.Infoln("init dispatcher")
+	GLog.Infoln("init worker")
 	InitWorker()
 
 	// 任务执行结果处理
-	GLog.Infoln("init dispatcher")
+	GLog.Infoln("init notify")
 	InitNotify()
 
 	for {
